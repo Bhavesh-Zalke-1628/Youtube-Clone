@@ -1,34 +1,40 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+
+import axios from 'axios';
+import { useEffect } from 'react';
+import { Route, Routes } from 'react-router';
 import './App.css'
+import Layout from './Layout/Layout';
+import Home from './Pages/Home';
 
 function App() {
-  const [count, setCount] = useState(0)
+
+
+
+
+  const fetchVideoDetails = async (videoId) => {
+    try {
+      const response = await axios.get("https://www.googleapis.com/youtube/v3/videos", {
+        params: {
+          part: "snippet,contentDetails,statistics", // Metadata, details, and statistics
+          id: videoId, // ID of the video
+          key: API_KEY,
+        },
+      });
+      console.log(response.data.items[0]); // Logs the video details
+      return response.data.items[0];
+    } catch (error) {
+      console.error("Error fetching video details:", error);
+    }
+  };
+
+  // Example usage
+  // fetchVideoDetails("dQw4w9WgXcQ"); // Replace with a valid YouTube video ID
+
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <Routes>
+      <Route path='/' element={<Home />}></Route>
+    </Routes>
   )
 }
 
