@@ -1,89 +1,113 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchTrendingVideos, fetchChannelThumbnail } from "../Redux/Slice/BasicSliec";
-import Layout from "../Layout/Layout";
-import axios from "axios";
+import React, { useEffect, useRef, useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import Layout from '../Layout/Layout';
+import { useNavigate } from 'react-router-dom';
+import { fetchRandomVideos, getChanelData } from '../Redux/Slice/BasicSliec';
 
 function Home() {
     const dispatch = useDispatch();
-    const { video, status, error } = useSelector((state) => state.basic);
+    const navigate = useNavigate();
+    const { videos, status, pageToken, error, channelData } = useSelector((state) => state.basic);
+    const observerRef = useRef(null); // Reference for the observer trigger
 
-    const [channelThumbnails, setChannelThumbnails] = useState({});
-
+    // Fetch the initial set of videos when the component mounts
     useEffect(() => {
-        if (status === "idle") {
-            dispatch(fetchTrendingVideos());
+        dispatch(fetchRandomVideos());
+    }, [dispatch]);
+
+    // Fetch channel data for each video when the videos are available
+    useEffect(() => {
+        if (videos.length > 0) {
+            videos.forEach((video) => {
+                // Dispatch getChanelData for each video's channelId if not already fetched
+                if (!channelData[video.snippet.channelId]) {
+                    dispatch(getChanelData(video.snippet.channelId));
+                }
+            });
         }
-    }, [status, dispatch]);
+    }, [videos, dispatch, channelData]);
 
+    // Intersection Observer Callback
+    const observerCallback = useCallback(
+        (entries) => {
+            const target = entries[0];
+            if (target.isIntersecting && pageToken && status !== 'loading') {
+                dispatch(fetchRandomVideos(pageToken));
+            }
+        },
+        [dispatch, pageToken, status]
+    );
+
+    // Attach the Intersection Observer to the trigger element
     useEffect(() => {
-        const loadChannelThumbnails = async () => {
-            const thumbnails = {};
-            await Promise.all(
-                video.map(async (videoItem) => {
-                    const channelId = videoItem.snippet.channelId;
-                    if (channelId && !thumbnails[channelId]) {
-                        try {
-                            const thumbnail = await fetchChannelThumbnail(channelId);
-                            thumbnails[channelId] = thumbnail;
-                        } catch (error) {
-                            console.error(`Error fetching thumbnail for ${channelId}:`, error);
-                            thumbnails[channelId] = "https://via.placeholder.com/32"; // Fallback placeholder
-                        }
-                    }
-                })
-            );
-            setChannelThumbnails(thumbnails);
+        const observer = new IntersectionObserver(observerCallback, { threshold: 1.0 });
+        if (observerRef.current) observer.observe(observerRef.current);
+
+        return () => {
+            if (observerRef.current) observer.unobserve(observerRef.current);
         };
-
-        if (video.length > 0) {
-            loadChannelThumbnails();
-        }
-    }, [video]);
+    }, [observerCallback]);
 
     return (
         <Layout>
             <div className="mt-6 px-6 py-4 w-full h-full">
-                {
-                    (status === "loading") ? (
-                        <div className="text-center text-lg font-medium text-gray-700">
-                            Loading...
-                        </div>
-                    ) : (status === "succeeded") ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                            {video.map((videoItem) => (
-                                <div key={videoItem.id} className="rounded-lg shadow-lg overflow-hidden bg-white hover:shadow-xl transition-shadow">
-                                    <img
-                                        src={videoItem.snippet.thumbnails.medium.url}
-                                        alt={videoItem.snippet.title}
-                                        className="w-full h-auto"
-                                    />
-                                    <div className="p-4">
-                                        <h2 className="text-md font-semibold line-clamp-2 text-gray-800">
-                                            {videoItem.snippet.title}
-                                        </h2>
+                {status === 'loading' && videos.length === 0 && <div>Loading...</div>}
 
-                                        {/* Channel Block */}
-                                        <div className="flex items-center mt-3">
-                                            <img
-                                                src={channelThumbnails[videoItem.snippet.channelId] || "https://via.placeholder.com/32"}
-                                                alt={videoItem.snippet.channelTitle}
-                                                className="w-8 h-8 rounded-full mr-2"
-                                            />
-                                            <span className="text-sm font-medium text-gray-700">
-                                                {videoItem.snippet.channelTitle}
-                                            </span>
+                {status === 'succeeded' && (
+                    <div>
+                        {videos.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                {videos.map((videoItem) => (
+                                    <div
+                                        key={videoItem.id.videoId}  // Using videoId for unique key
+                                        className="rounded-lg shadow-lg overflow-hidden bg-white hover:shadow-xl transition-shadow cursor-pointer"
+                                        onClick={() => navigate(`/video/${videoItem.id.videoId}`)}
+                                    >
+                                        <img
+                                            src={videoItem.snippet.thumbnails.medium.url}
+                                            alt={videoItem.snippet.title}
+                                            className="w-full h-auto"
+                                        />
+                                        <div className="p-4">
+                                            <h2 className="text-md font-semibold line-clamp-2 text-gray-800">
+                                                {videoItem.snippet.title}
+                                            </h2>
+                                            <div className="flex items-center mt-3">
+                                                <img
+                                                    src={channelData[videoItem.snippet.channelId]?.snippet?.thumbnails?.default?.url || 'https://via.placeholder.com/32'}
+                                                    alt={videoItem.snippet.channelTitle}
+                                                    className="w-8 h-8 rounded-full mr-2"
+                                                />
+                                                <span className="text-sm font-medium text-gray-700">
+                                                    {videoItem.snippet.channelTitle}
+                                                </span>
+                                            </div>
+                                            {/* Display view count */}
+                                            <div className="mt-2 text-sm text-gray-600">
+                                                Views: {videoItem.statistics?.viewCount || '0'}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center text-red-500 text-lg font-medium">
-                            Error: {error || "Failed to load videos."}
-                        </div>
-                    )
-                }
+                                ))}
+                            </div>
+                        ) : (
+                            <div>No videos available.</div>
+                        )}
+                    </div>
+                )}
+
+                {status === 'failed' && (
+                    <div className="text-red-500">
+                        Error: {error || 'Failed to load videos. Please try again later.'}
+                    </div>
+                )}
+
+                {/* Trigger element for Intersection Observer */}
+                <div
+                    ref={observerRef}
+                    className="h-12"
+                    style={{ position: 'relative', bottom: '0', width: '100%' }}
+                ></div>
             </div>
         </Layout>
     );

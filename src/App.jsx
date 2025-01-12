@@ -5,6 +5,7 @@ import { Route, Routes } from 'react-router';
 import './App.css'
 import Layout from './Layout/Layout';
 import Home from './Pages/Home';
+import VideoPage from './Pages/VideoPage';
 
 function App() {
 
@@ -27,13 +28,10 @@ function App() {
     }
   };
 
-  // Example usage
-  // fetchVideoDetails("dQw4w9WgXcQ"); // Replace with a valid YouTube video ID
-
-
   return (
     <Routes>
       <Route path='/' element={<Home />}></Route>
+      <Route path="/video/:id" element={<VideoPage />} />
     </Routes>
   )
 }

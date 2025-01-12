@@ -1,12 +1,16 @@
 import React, { useState } from "react";
 import { FaSearch } from "react-icons/fa"; // Importing a search icon from react-icons
+import { useDispatch } from "react-redux";
+import { setQuery, searchVideos } from '../Redux/Slice/SearchSlice' // Importing actions from the slice
 
-const SearchBar = ({ onSearch }) => {
-    const [query, setQuery] = useState("");
+const SearchBar = () => {
+    const [input, setInput] = useState("");
+    const dispatch = useDispatch();
 
     const handleSearch = () => {
-        if (onSearch) {
-            onSearch(query); // Call the search function passed from the parent component
+        if (input.trim()) {
+            dispatch(setQuery(input)); // Store the search query in the Redux state
+            dispatch(searchVideos(input)); // Fetch search results
         }
     };
 
@@ -14,8 +18,8 @@ const SearchBar = ({ onSearch }) => {
         <div className="flex items-center w-full max-w-4xl mx-auto bg-gray-100 rounded-full shadow-lg px-4 py-2 border border-gray-300 hover:shadow-xl transition-shadow duration-300">
             <input
                 type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
                 placeholder="Search for videos..."
                 className="flex-grow bg-transparent text-gray-700 placeholder-gray-500 outline-none px-3 py-2 rounded-l-full focus:ring-2 focus:ring-blue-500 transition-all duration-300"
             />

@@ -24,22 +24,22 @@ const Layout = ({ children }) => {
                 <div className="flex items-center">
                     <button
                         onClick={toggleMenu}
-                        className="lg:hidden block p-2 text-white"
+                        className="p-2 text-white"
                     >
                         ☰
                     </button>
                     <span className="text-lg font-bold">Video App</span>
                 </div>
 
-                {/* Search bar - visible only on large screens */}
-                <div className="hidden lg:block">
+                {/* Search bar - visible on all screens */}
+                <div className="block">
                     <SearchBar onSearch={handleSearch} />
                 </div>
             </nav>
 
-            {/* Sidebar menu - visible only on mobile */}
+            {/* Sidebar menu */}
             <div
-                className={`lg:hidden fixed top-0 left-0 w-64 h-full bg-gray-800 text-white transition-all ${isMenuOpen ? "translate-x-0" : "-translate-x-full"
+                className={`fixed top-0 left-0 w-64 h-full bg-gray-800 text-white transition-all ${isMenuOpen ? "translate-x-0" : "-translate-x-full"
                     }`}
             >
                 <div className="flex justify-between p-4 border-b border-gray-700">
